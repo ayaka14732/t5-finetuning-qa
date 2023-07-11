@@ -46,11 +46,11 @@ def main() -> None:
     global forward, optimize
 
     lr = 0.2
-    batch_size = 72
+    batch_size = 128
     max_len_enc = 256
     max_len_dec = 64
     n_epochs = 5
-    rank = 2
+    rank = 3
 
     initialise_tpu('v4-16', n_devices=1, rank=rank)
     print('Running on:', jax.numpy.zeros(()).device())
