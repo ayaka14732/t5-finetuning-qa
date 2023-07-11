@@ -46,7 +46,7 @@ def main() -> None:
     global forward, optimize
 
     lr = 0.001
-    batch_size = 192
+    batch_size = 160
     max_len_enc = 256
     max_len_dec = 64
     n_epochs = 5
