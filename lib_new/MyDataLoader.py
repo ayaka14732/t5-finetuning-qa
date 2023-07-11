@@ -36,14 +36,14 @@ def worker_init_fn(*args):
     initialise_cpu()
 
 class MyDataLoader(DataLoader):
-    def __init__(self, data, tokenizer, batch_size, max_len):
+    def __init__(self, data, tokenizer, batch_size, max_len, n_workers):
         dataset = MyDataset(data)
         collate_fn = partial(transform, tokenizer, max_len)
         super().__init__(
             dataset=dataset,
             batch_size=batch_size,
             shuffle=True,
-            num_workers=3,
+            num_workers=n_workers,
             collate_fn=collate_fn,
             drop_last=True,
             worker_init_fn=worker_init_fn,

@@ -41,8 +41,9 @@ def train_step(params: dict, opt_state: Any, data_batch: TrainData, *, key: rand
 def main() -> None:
     global forward, optimize
 
-    batch_size = 36
+    batch_size = 72
     max_len = 128
+    n_workers = 8
     n_epochs = 10
 
     rank = 1
@@ -57,7 +58,7 @@ def main() -> None:
     forward, params = load_model()
 
     data = load_data()
-    dataloader = MyDataLoader(data, tokenizer, batch_size, max_len)
+    dataloader = MyDataLoader(data, tokenizer, batch_size, max_len, n_workers)
 
     optimizer = optax.chain(
         optax.adaptive_grad_clip(0.1, eps=0.001),
@@ -67,8 +68,6 @@ def main() -> None:
     opt_state = optimizer.init(params)
 
     key = rand.PRNGKey(BEST_INTEGER)
-
-    default_device = jax.devices()[0]
 
     for epoch in range(n_epochs):
         print(f'Epoch {epoch}')
