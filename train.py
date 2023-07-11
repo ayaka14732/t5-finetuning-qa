@@ -1,4 +1,5 @@
 import jax
+import jax.numpy as jnp
 import jax.random as rand
 import jax_smi
 import optax
@@ -7,8 +8,7 @@ from transformers import FlaxT5ForConditionalGeneration, T5Config, T5Tokenizer
 from typing import Any, Callable, Optional
 import wandb
 
-from lib.proc_init_utils import initialise_tpu;  
-from lib.seeding import BEST_INTEGER
+from lib.proc_init_utils import initialise_tpu
 from lib_new import MyDataLoader, TrainData, cross_entropy_loss, load_data
 
 forward: Optional[Callable] = None
@@ -45,17 +45,18 @@ def train_step(params: dict, opt_state: Any, data_batch: TrainData, *, key: rand
 def main() -> None:
     global forward, optimize
 
-    lr = 0.001
+    lr = 0.002
     batch_size = 160
     max_len_enc = 256
     max_len_dec = 64
     n_epochs = 5
-    rank = 0
+    rank = 1
+    seed = 3407
 
     initialise_tpu('v4-16', n_devices=1, rank=rank)
-    print('Running on:', jax.numpy.zeros(()).device())
     wandb.init(project='t5-finetuning-qa')
     jax_smi.initialise_tracking(rank=rank)
+    key = rand.PRNGKey(seed)
 
     tokenizer = T5Tokenizer.from_pretrained('base5')
     forward, params = load_model()
@@ -67,19 +68,14 @@ def main() -> None:
     optimize = optimizer.update
     opt_state = optimizer.init(params)
 
-    key = rand.PRNGKey(BEST_INTEGER)
-
     for epoch in range(n_epochs):
-        epoch_loss = 0.
+        epoch_loss = jnp.zeros(())
         for step, data_batch in enumerate(dataloader):
             start_time = time.time()
             key, subkey = rand.split(key)
             params, opt_state, loss = train_step(params, opt_state, data_batch, key=subkey)
-            loss = loss.item()
-            epoch_loss += loss
-            elapsed_time = time.time() - start_time
-            wandb.log({'train loss': loss, 'time': elapsed_time})
-        epoch_loss /= step
+            jax.debug.callback(lambda loss: wandb.log({'train loss': loss, 'time': time.time() - start_time}), loss)
+        epoch_loss /= (step + 1)
         wandb.log({'epoch loss': epoch_loss})
 
 if __name__ == '__main__':
