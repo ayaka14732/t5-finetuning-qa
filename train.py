@@ -45,8 +45,8 @@ def train_step(params: dict, opt_state: Any, data_batch: TrainData, *, key: rand
 def main() -> None:
     global forward, optimize
 
-    lr = 0.2
-    batch_size = 128
+    lr = 0.001
+    batch_size = 256
     max_len_enc = 256
     max_len_dec = 64
     n_epochs = 5
@@ -63,10 +63,7 @@ def main() -> None:
     data = load_data()
     dataloader = MyDataLoader(data, tokenizer, batch_size, max_len_enc, max_len_dec)  # TODO: prng
 
-    optimizer = optax.chain(
-        optax.adaptive_grad_clip(0.1),
-        optax.sgd(learning_rate=lr),
-    )
+    optimizer = optax.adafactor(learning_rate=lr)
     optimize = optimizer.update
     opt_state = optimizer.init(params)
 
