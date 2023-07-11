@@ -1,4 +1,5 @@
 import jax
+from jax import Array
 import jax.numpy as jnp
 import jax.random as rand
 import jax_smi
@@ -36,21 +37,23 @@ def train_forward(params: dict, data_batch: TrainData, *, key: rand.KeyArray):
     return loss
 
 @jax.jit
-def train_step(params: dict, opt_state: Any, data_batch: TrainData, *, key: rand.KeyArray):
-    loss, grads = train_forward(params, data_batch, key=key)
+def train_step(params: dict, opt_state: Any, total_loss: Array, data_batch: TrainData, key: rand.KeyArray):
+    key, subkey = rand.split(key)
+    loss, grads = train_forward(params, data_batch, subkey)
+    total_loss += loss
     updates, opt_state = optimize(grads, opt_state, params)  # type: ignore
     params = optax.apply_updates(params, updates)
-    return params, opt_state, loss
+    return params, opt_state, total_loss, loss, key
 
 def main() -> None:
     global forward, optimize
 
-    lr = 0.002
+    lr = 0.0025
     batch_size = 160
     max_len_enc = 256
     max_len_dec = 64
     n_epochs = 5
-    rank = 1
+    rank = 2
     seed = 3407
 
     initialise_tpu('v4-16', n_devices=1, rank=rank)
@@ -69,14 +72,12 @@ def main() -> None:
     opt_state = optimizer.init(params)
 
     for epoch in range(n_epochs):
-        epoch_loss = jnp.zeros(())
+        total_loss = jnp.zeros(())
         for step, data_batch in enumerate(dataloader):
             start_time = time.time()
-            key, subkey = rand.split(key)
-            params, opt_state, loss = train_step(params, opt_state, data_batch, key=subkey)
-            jax.debug.callback(lambda loss: wandb.log({'train loss': loss, 'time': time.time() - start_time}), loss)
-        epoch_loss /= (step + 1)
-        wandb.log({'epoch loss': epoch_loss})
+            params, opt_state, total_loss, loss, key = train_step(params, opt_state, total_loss, data_batch, key)
+            jax.debug.callback(lambda loss: wandb.log({'train loss': loss.item(), 'time': time.time() - start_time}), loss)
+        wandb.log({'epoch loss': total_loss.item() / (step + 1)})
 
 if __name__ == '__main__':
     main()
