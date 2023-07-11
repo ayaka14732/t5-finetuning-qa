@@ -1,0 +1,12 @@
+jax
+flax
+torch
+
+datasets
+transformers
+sentencepiece
+
+jax_smi
+mypy
+gdown
+wandb

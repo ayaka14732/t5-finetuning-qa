@@ -1,0 +1,32 @@
+{
+    "cSpell.words": [
+        "PRNG",
+        "arange",
+        "argnums",
+        "asarray",
+        "astype",
+        "bfloat",
+        "cifar",
+        "dtype",
+        "einsum",
+        "enwiki",
+        "fwdwd",
+        "gelu",
+        "hstack",
+        "hyperparams",
+        "jaxtyped",
+        "jaxtyping",
+        "ndarray",
+        "optax",
+        "relu",
+        "sharded",
+        "stax",
+        "tqdm",
+        "trange",
+        "vocab",
+        "vocab",
+        "vstack",
+        "wandb"
+    ],
+    "mypy.runUsingActiveInterpreter": true
+}
