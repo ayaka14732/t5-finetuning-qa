@@ -17,20 +17,6 @@ def load_model() -> tuple[Callable, dict]:
     params = model.params
     return forward, params
 
-# import torch
-# from transformers import T5ForConditionalGeneration
-# config = T5Config.from_pretrained('base5', tie_word_embeddings=False)
-# model = T5ForConditionalGeneration.from_pretrained('base5', config=config)
-# torch.equal(model.shared.weight, model.encoder.embed_tokens.weight)
-# torch.equal(model.shared.weight, model.decoder.embed_tokens.weight)
-
-# outputs = model.generate(seq, params=params, max_length=120, do_sample=True, top_k=0)
-# tokenizer.batch_decode(outputs.sequences, skip_special_tokens=True)
-
-batch_size = 36
-max_len = 128
-n_epochs = 10
-
 @jax.jit
 @jax.value_and_grad
 def train_forward(params: dict, data_batch: TrainData, *, key: rand.KeyArray):
@@ -55,10 +41,17 @@ def train_step(params: dict, opt_state: Any, data_batch: TrainData, *, key: rand
 def main() -> None:
     global forward, optimize
 
-    initialise_tpu('v4-16', n_devices=1, rank=0)
+    batch_size = 36
+    max_len = 128
+    n_epochs = 10
+
+    rank = 1
+
+    initialise_tpu('v4-16', n_devices=1, rank=rank)
     print('Running on:', jax.numpy.zeros(()).device())
     wandb.init(project='t5-finetuning-qa')
-    jax_smi.initialise_tracking()
+    if rank == 0:
+        jax_smi.initialise_tracking()
 
     tokenizer = T5Tokenizer.from_pretrained('base5')
     forward, params = load_model()
@@ -81,7 +74,6 @@ def main() -> None:
         print(f'Epoch {epoch}')
         for data_batch in dataloader:
             print(f'Step')
-            data_batch = jax.device_put(data_batch, default_device)
             key, subkey = rand.split(key)
             params, opt_state, loss = train_step(params, opt_state, data_batch, key=subkey)
             wandb.log({'train loss': loss}, commit=False)
