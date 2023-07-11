@@ -10,3 +10,4 @@ jax_smi
 mypy
 gdown
 wandb
+matplotlib

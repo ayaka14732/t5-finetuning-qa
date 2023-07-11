@@ -37,7 +37,7 @@ def train_forward(params: dict, data_batch: TrainData, *, key: rand.KeyArray):
     return loss
 
 @jax.jit
-def train_step(params: dict, opt_state: Any, total_loss: Array, data_batch: TrainData, key: rand.KeyArray):
+def train_step(params: dict, opt_state: Any, total_loss: Array, data_batch: TrainData, key: rand.KeyArray) -> tuple[dict, Any, Array, Array, rand.KeyArray]:
     key, subkey = rand.split(key)
     loss, grads = train_forward(params, data_batch, key=subkey)
     total_loss += loss
