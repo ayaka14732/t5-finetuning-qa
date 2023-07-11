@@ -2,6 +2,7 @@ import jax
 import jax.random as rand
 import jax_smi
 import optax
+import time
 from transformers import FlaxT5ForConditionalGeneration, T5Config, T5Tokenizer
 from typing import Any, Callable, Optional
 import wandb
@@ -44,13 +45,14 @@ def train_step(params: dict, opt_state: Any, data_batch: TrainData, *, key: rand
 def main() -> None:
     global forward, optimize
 
+    lr = 0.05
     batch_size = 72
     max_len_enc = 256
     max_len_dec = 64
     n_workers = 8
     n_epochs = 5
 
-    rank = 0
+    rank = 3
 
     initialise_tpu('v4-16', n_devices=1, rank=rank)
     print('Running on:', jax.numpy.zeros(()).device())
@@ -65,8 +67,8 @@ def main() -> None:
     dataloader = MyDataLoader(data, tokenizer, batch_size, max_len_enc, max_len_dec, n_workers)  # TODO: prng
 
     optimizer = optax.chain(
-        optax.adaptive_grad_clip(0.1, eps=0.001),
-        optax.sgd(learning_rate=0.03),
+        optax.adaptive_grad_clip(0.1),
+        optax.sgd(learning_rate=lr),
     )
     optimize = optimizer.update
     opt_state = optimizer.init(params)
@@ -76,10 +78,12 @@ def main() -> None:
     for epoch in range(n_epochs):
         print(f'Epoch {epoch}')
         for data_batch in dataloader:
+            start_time = time.time()
             print(f'Step')
             key, subkey = rand.split(key)
             params, opt_state, loss = train_step(params, opt_state, data_batch, key=subkey)
-            wandb.log({'train loss': loss})
+            elapsed_time = time.time() - start_time
+            wandb.log({'train loss': loss, 'time': elapsed_time})
 
 if __name__ == '__main__':
     main()
