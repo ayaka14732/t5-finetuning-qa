@@ -20,7 +20,6 @@ def load_model() -> tuple[Callable, dict]:
     params = model.params
     return forward, params
 
-@jax.jit
 @jax.value_and_grad
 def train_forward(params: dict, data_batch: TrainData, *, key: rand.KeyArray):
     src, dst, mask_enc, mask_dec, labels = data_batch
@@ -35,6 +34,7 @@ def train_forward(params: dict, data_batch: TrainData, *, key: rand.KeyArray):
     loss = cross_entropy_loss(outputs.logits, labels, mask=mask_dec)
     return loss
 
+@jax.jit
 def train_step(params: dict, opt_state: Any, data_batch: TrainData, *, key: rand.KeyArray):
     loss, grads = train_forward(params, data_batch, key=key)
     updates, opt_state = optimize(grads, opt_state, params)  # type: ignore
@@ -49,7 +49,7 @@ def main() -> None:
     n_workers = 8
     n_epochs = 10
 
-    rank = 2
+    rank = 1
 
     initialise_tpu('v4-16', n_devices=1, rank=rank)
     print('Running on:', jax.numpy.zeros(()).device())
