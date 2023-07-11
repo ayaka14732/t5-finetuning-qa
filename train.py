@@ -3,12 +3,15 @@ import jax.random as rand
 import jax_smi
 import optax
 from transformers import FlaxT5ForConditionalGeneration, T5Config, T5Tokenizer
-from typing import Any, Callable
+from typing import Any, Callable, Optional
 import wandb
 
 from lib.proc_init_utils import initialise_tpu;  
 from lib.seeding import BEST_INTEGER
 from lib_new import MyDataLoader, TrainData, cross_entropy_loss, load_data
+
+forward: Optional[Callable] = None
+optimize: Optional[Callable] = None
 
 def load_model() -> tuple[Callable, dict]:
     config = T5Config.from_pretrained('base5', tie_word_embeddings=False)
@@ -28,13 +31,13 @@ def train_forward(params: dict, data_batch: TrainData, *, key: rand.KeyArray):
         decoder_attention_mask=mask_dec,
         params=params,
         dropout_rng=key,
-    )
+    )  # type: ignore
     loss = cross_entropy_loss(outputs.logits, labels, mask=mask_dec)
     return loss
 
 def train_step(params: dict, opt_state: Any, data_batch: TrainData, *, key: rand.KeyArray):
     loss, grads = train_forward(params, data_batch, key=key)
-    updates, opt_state = optimize(grads, opt_state, params)
+    updates, opt_state = optimize(grads, opt_state, params)  # type: ignore
     params = optax.apply_updates(params, updates)
     return params, opt_state, loss
 
@@ -46,7 +49,7 @@ def main() -> None:
     n_workers = 8
     n_epochs = 10
 
-    rank = 1
+    rank = 2
 
     initialise_tpu('v4-16', n_devices=1, rank=rank)
     print('Running on:', jax.numpy.zeros(()).device())
@@ -58,7 +61,7 @@ def main() -> None:
     forward, params = load_model()
 
     data = load_data()
-    dataloader = MyDataLoader(data, tokenizer, batch_size, max_len, n_workers)
+    dataloader = MyDataLoader(data, tokenizer, batch_size, max_len, n_workers)  # TODO: prng
 
     optimizer = optax.chain(
         optax.adaptive_grad_clip(0.1, eps=0.001),
@@ -75,8 +78,7 @@ def main() -> None:
             print(f'Step')
             key, subkey = rand.split(key)
             params, opt_state, loss = train_step(params, opt_state, data_batch, key=subkey)
-            wandb.log({'train loss': loss}, commit=False)
-        wandb.log({}, commit=True)
+            wandb.log({'train loss': loss})
 
 if __name__ == '__main__':
     main()
