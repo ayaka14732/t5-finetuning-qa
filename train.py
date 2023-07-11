@@ -50,7 +50,7 @@ def main() -> None:
     max_len_enc = 256
     max_len_dec = 64
     n_epochs = 5
-    rank = 3
+    rank = 0
 
     initialise_tpu('v4-16', n_devices=1, rank=rank)
     print('Running on:', jax.numpy.zeros(()).device())
