@@ -45,26 +45,23 @@ def train_step(params: dict, opt_state: Any, data_batch: TrainData, *, key: rand
 def main() -> None:
     global forward, optimize
 
-    lr = 0.05
+    lr = 0.1
     batch_size = 72
     max_len_enc = 256
     max_len_dec = 64
-    n_workers = 8
     n_epochs = 5
-
-    rank = 3
+    rank = 0
 
     initialise_tpu('v4-16', n_devices=1, rank=rank)
     print('Running on:', jax.numpy.zeros(()).device())
     wandb.init(project='t5-finetuning-qa')
-    if rank == 0:
-        jax_smi.initialise_tracking()
+    jax_smi.initialise_tracking(rank=rank)
 
     tokenizer = T5Tokenizer.from_pretrained('base5')
     forward, params = load_model()
 
     data = load_data()
-    dataloader = MyDataLoader(data, tokenizer, batch_size, max_len_enc, max_len_dec, n_workers)  # TODO: prng
+    dataloader = MyDataLoader(data, tokenizer, batch_size, max_len_enc, max_len_dec)  # TODO: prng
 
     optimizer = optax.chain(
         optax.adaptive_grad_clip(0.1),
@@ -76,14 +73,17 @@ def main() -> None:
     key = rand.PRNGKey(BEST_INTEGER)
 
     for epoch in range(n_epochs):
-        print(f'Epoch {epoch}')
-        for data_batch in dataloader:
+        epoch_loss = 0.
+        for step, data_batch in enumerate(dataloader):
             start_time = time.time()
-            print(f'Step')
             key, subkey = rand.split(key)
             params, opt_state, loss = train_step(params, opt_state, data_batch, key=subkey)
+            loss = loss.item()
+            epoch_loss += loss
             elapsed_time = time.time() - start_time
             wandb.log({'train loss': loss, 'time': elapsed_time})
+        epoch_loss /= step
+        wandb.log({'epoch loss': epoch_loss})
 
 if __name__ == '__main__':
     main()
