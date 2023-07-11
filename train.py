@@ -1,5 +1,4 @@
-from lib.proc_init_utils import initialise_tpu; initialise_tpu('v4-16', n_devices=1, rank=0)
-import jax; print('Running on:', jax.numpy.zeros(()).device())
+import jax
 import jax.random as rand
 import jax_smi
 import optax
@@ -7,8 +6,9 @@ from transformers import FlaxT5ForConditionalGeneration, T5Config, T5Tokenizer
 from typing import Any, Callable
 import wandb
 
+from lib.proc_init_utils import initialise_tpu;  
 from lib.seeding import BEST_INTEGER
-from lib_new import DataLoader, TrainData, cross_entropy_loss, load_dataset
+from lib_new import MyDataLoader, TrainData, cross_entropy_loss, load_data
 
 def load_model() -> tuple[Callable, dict]:
     config = T5Config.from_pretrained('base5', tie_word_embeddings=False)
@@ -30,8 +30,6 @@ def load_model() -> tuple[Callable, dict]:
 batch_size = 36
 max_len = 128
 n_epochs = 10
-
-forward = optimize = ...  # dummy function
 
 @jax.jit
 @jax.value_and_grad
@@ -57,14 +55,16 @@ def train_step(params: dict, opt_state: Any, data_batch: TrainData, *, key: rand
 def main() -> None:
     global forward, optimize
 
+    initialise_tpu('v4-16', n_devices=1, rank=0)
+    print('Running on:', jax.numpy.zeros(()).device())
     wandb.init(project='t5-finetuning-qa')
     jax_smi.initialise_tracking()
 
     tokenizer = T5Tokenizer.from_pretrained('base5')
     forward, params = load_model()
 
-    dataset = load_dataset()
-    dataloader = DataLoader(dataset, tokenizer, batch_size=batch_size, max_len=max_len)
+    data = load_data()
+    dataloader = MyDataLoader(data, tokenizer, batch_size, max_len)
 
     optimizer = optax.chain(
         optax.adaptive_grad_clip(0.1, eps=0.001),
@@ -75,15 +75,17 @@ def main() -> None:
 
     key = rand.PRNGKey(BEST_INTEGER)
 
+    default_device = jax.devices()[0]
+
     for epoch in range(n_epochs):
         print(f'Epoch {epoch}')
         for data_batch in dataloader:
-            data_batch = jax.device_put(data_batch)
+            print(f'Step')
+            data_batch = jax.device_put(data_batch, default_device)
             key, subkey = rand.split(key)
             params, opt_state, loss = train_step(params, opt_state, data_batch, key=subkey)
             wandb.log({'train loss': loss}, commit=False)
-
-    wandb.log({}, commit=True)
+        wandb.log({}, commit=True)
 
 if __name__ == '__main__':
     main()

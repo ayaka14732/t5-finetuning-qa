@@ -1,4 +1,4 @@
-from datasets import load_dataset as load_dataset_
+from datasets import load_dataset
 
 initial_prompt = 'Generate a high-quality response for the conversation.\nConversation:'
 
@@ -35,8 +35,8 @@ Response:
 There is an Afrian place named Bedouin in the centre. How does that sound?
 '''
 
-def load_dataset() -> list[tuple[str, str]]:
-    dataset = load_dataset_('multi_woz_v22', split='train')
+def load_data() -> list[tuple[str, str]]:
+    dataset = load_dataset('multi_woz_v22', split='train')
     def preprocess(example):
         example['utterances'] = example['turns']['utterance']
         return example
