@@ -45,11 +45,12 @@ def main() -> None:
     global forward, optimize
 
     batch_size = 72
-    max_len = 128
+    max_len_enc = 256
+    max_len_dec = 64
     n_workers = 8
-    n_epochs = 10
+    n_epochs = 5
 
-    rank = 1
+    rank = 0
 
     initialise_tpu('v4-16', n_devices=1, rank=rank)
     print('Running on:', jax.numpy.zeros(()).device())
@@ -61,7 +62,7 @@ def main() -> None:
     forward, params = load_model()
 
     data = load_data()
-    dataloader = MyDataLoader(data, tokenizer, batch_size, max_len, n_workers)  # TODO: prng
+    dataloader = MyDataLoader(data, tokenizer, batch_size, max_len_enc, max_len_dec, n_workers)  # TODO: prng
 
     optimizer = optax.chain(
         optax.adaptive_grad_clip(0.1, eps=0.001),

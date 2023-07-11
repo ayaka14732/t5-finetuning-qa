@@ -18,10 +18,10 @@ class MyDataset(Dataset):
     def __len__(self) -> int:
         return len(self.data)
 
-def transform(tokenizer: T5Tokenizer, max_len: int, data_batch: list[tuple[str, str]]):
+def transform(tokenizer: T5Tokenizer, max_len_enc: int, max_len_dec: int, data_batch: list[tuple[str, str]]) -> TrainData:
     seq_src, seq_dst = zip(*data_batch)
-    inputs_src = tokenizer(seq_src, padding='max_length', max_length=max_len, truncation=True, return_tensors='jax')
-    inputs_dst = tokenizer(seq_dst, padding='max_length', max_length=max_len, truncation=True, return_tensors='jax')
+    inputs_src = tokenizer(seq_src, padding='max_length', max_length=max_len_enc, truncation=True, return_tensors='jax')
+    inputs_dst = tokenizer(seq_dst, padding='max_length', max_length=max_len_dec, truncation=True, return_tensors='jax')
 
     src = inputs_src.input_ids.astype(jnp.uint16)
     dst = inputs_dst.input_ids.astype(jnp.uint16)
@@ -36,9 +36,9 @@ def worker_init_fn(*args):
     initialise_cpu()
 
 class MyDataLoader(DataLoader):
-    def __init__(self, data, tokenizer, batch_size, max_len, n_workers):
+    def __init__(self, data: list[tuple[str, str]], tokenizer: T5Tokenizer, batch_size: int, max_len_enc: int, max_len_dec: int, n_workers: int) -> None:
         dataset = MyDataset(data)
-        collate_fn = partial(transform, tokenizer, max_len)
+        collate_fn = partial(transform, tokenizer, max_len_enc, max_len_dec)
         super().__init__(
             dataset=dataset,
             batch_size=batch_size,
