@@ -31,8 +31,7 @@ def transform(tokenizer: T5Tokenizer, max_len_enc: int, max_len_dec: int, data_b
 
     return TrainData(src, dst, src_mask, dst_mask, labels)
 
-def worker_init_fn(*args):
-    print(*args)
+def worker_init_fn(*args, **kwargs) -> None:  # ignore all parameters
     initialise_cpu()
 
 class MyDataLoader(DataLoader):

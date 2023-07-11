@@ -45,12 +45,12 @@ def train_step(params: dict, opt_state: Any, data_batch: TrainData, *, key: rand
 def main() -> None:
     global forward, optimize
 
-    lr = 0.1
+    lr = 0.15
     batch_size = 72
     max_len_enc = 256
     max_len_dec = 64
     n_epochs = 5
-    rank = 0
+    rank = 1
 
     initialise_tpu('v4-16', n_devices=1, rank=rank)
     print('Running on:', jax.numpy.zeros(()).device())
