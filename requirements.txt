@@ -11,3 +11,4 @@ mypy
 gdown
 wandb
 matplotlib
+einops
