@@ -59,6 +59,7 @@ def main() -> None:
 
     initialise_tpu('v4-16', n_devices=1, rank=rank)
     wandb.init(project='t5-finetuning-qa')
+    print(wandb.run.name)  # type: ignore
     jax_smi.initialise_tracking(rank=rank)
     key = rand.PRNGKey(seed)
 
@@ -80,7 +81,7 @@ def main() -> None:
             jax.debug.callback(lambda loss: wandb.log({'train loss': loss.item(), 'time': time.time() - start_time}), loss)
         wandb.log({'epoch loss': total_loss.item() / (step + 1)})
 
-    save_params(params, 'params.npy')
+    save_params(params, f'{wandb.run.name}.npy')  # type: ignore
 
 if __name__ == '__main__':
     main()
