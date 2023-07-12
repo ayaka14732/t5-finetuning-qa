@@ -26,17 +26,17 @@ def transform(tokenizer: T5Tokenizer, max_len_enc: int, max_len_dec: int, data_b
     inputs_dst = tokenizer(seq_dst, padding='max_length', max_length=max_len_dec, truncation=True, return_tensors='jax')
 
     src = inputs_src.input_ids.astype(jnp.uint16)
-    dst = inputs_dst.input_ids.astype(jnp.uint16)
+    labels = inputs_dst.input_ids.astype(jnp.uint16)
     src_mask = inputs_src.attention_mask.astype(jnp.bool_)
     dst_mask = inputs_dst.attention_mask.astype(jnp.bool_)
-    labels = jnp.roll(dst, -1, axis=-1).at[:, -1].set(0)
+    dst = jnp.roll(labels, 1, axis=-1).at[:, 0].set(0)
 
     return TrainData(src, dst, src_mask, dst_mask, labels)
 
 def worker_init_fn(worker_id: int) -> None:
+    initialise_cpu()
     worker_seed = torch.initial_seed() % 2**32
     random.seed(worker_seed)
-    initialise_cpu()
 
 class MyDataLoader(DataLoader):
     def __init__(self, data: list[tuple[str, str]], tokenizer: T5Tokenizer, batch_size: int, max_len_enc: int, max_len_dec: int) -> None:
