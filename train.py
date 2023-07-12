@@ -49,7 +49,7 @@ def train_step(params: dict, opt_state: Any, total_loss: Array, data_batch: Trai
 def main() -> None:
     global forward, optimize
 
-    lr = 0.0025
+    lr = 0.0023
     batch_size = 56
     max_len_enc = 512
     max_len_dec = 64
