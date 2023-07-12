@@ -49,12 +49,12 @@ def train_step(params: dict, opt_state: Any, total_loss: Array, data_batch: Trai
 def main() -> None:
     global forward, optimize
 
-    lr = 0.0015
+    lr = 0.002
     batch_size = 56
     max_len_enc = 512
     max_len_dec = 64
     n_epochs = 8
-    rank = 0
+    rank = 1
     seed = 3407
 
     initialise_tpu('v4-16', n_devices=1, rank=rank)
