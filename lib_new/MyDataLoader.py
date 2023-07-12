@@ -42,19 +42,17 @@ class MyDataLoader(DataLoader):
     def __init__(self, data: list[tuple[str, str]], tokenizer: T5Tokenizer, batch_size: int, max_len_enc: int, max_len_dec: int) -> None:
         dataset = MyDataset(data)
         collate_fn = partial(transform, tokenizer, max_len_enc, max_len_dec)
-
         g = torch.Generator()
         g.manual_seed(0)
-
         super().__init__(
             dataset=dataset,
             batch_size=batch_size,
             shuffle=True,
-            num_workers=2,
+            num_workers=4,
             collate_fn=collate_fn,
             drop_last=True,
             worker_init_fn=worker_init_fn,
-            prefetch_factor=2,
+            prefetch_factor=1,
             multiprocessing_context=multiprocessing.get_context('spawn'),
             generator=g,
             persistent_workers=True,
