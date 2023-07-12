@@ -1,6 +1,7 @@
 from functools import partial
 import jax.numpy as jnp
 import multiprocessing
+import random
 import torch
 from torch.utils.data import DataLoader, Dataset
 from transformers import T5Tokenizer
@@ -33,9 +34,8 @@ def transform(tokenizer: T5Tokenizer, max_len_enc: int, max_len_dec: int, data_b
     return TrainData(src, dst, src_mask, dst_mask, labels)
 
 def worker_init_fn(worker_id: int) -> None:
-    # worker_seed = torch.initial_seed() % 2**32
-    # numpy.random.seed(worker_seed)
-    # random.seed(worker_seed)
+    worker_seed = torch.initial_seed() % 2**32
+    random.seed(worker_seed)
     initialise_cpu()
 
 class MyDataLoader(DataLoader):
