@@ -9,6 +9,7 @@ from transformers import FlaxT5ForConditionalGeneration, T5Config, T5Tokenizer
 from typing import Any, Callable, Optional
 import wandb
 
+from lib.param_utils import save_params
 from lib.proc_init_utils import initialise_tpu
 from lib_new import MyDataLoader, TrainData, cross_entropy_loss, load_data
 
@@ -49,7 +50,7 @@ def main() -> None:
     global forward, optimize
 
     lr = 0.0015
-    batch_size = 64
+    batch_size = 172
     max_len_enc = 256
     max_len_dec = 64
     n_epochs = 5
@@ -78,6 +79,8 @@ def main() -> None:
             params, opt_state, total_loss, loss, key = train_step(params, opt_state, total_loss, data_batch, key)
             jax.debug.callback(lambda loss: wandb.log({'train loss': loss.item(), 'time': time.time() - start_time}), loss)
         wandb.log({'epoch loss': total_loss.item() / (step + 1)})
+
+    save_params(params, 'params.npy')
 
 if __name__ == '__main__':
     main()
