@@ -53,7 +53,7 @@ def main() -> None:
     batch_size = 64
     max_len_enc = 512
     max_len_dec = 64
-    n_epochs = 5
+    n_epochs = 8
     rank = 0
     seed = 3407
 
