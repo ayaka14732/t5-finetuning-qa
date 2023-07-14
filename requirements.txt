@@ -10,3 +10,8 @@ jax_smi
 mypy
 gdown
 wandb
+matplotlib
+einops
+evaluate
+tqdm
+types-tqdm

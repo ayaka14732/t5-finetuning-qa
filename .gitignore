@@ -2,6 +2,9 @@
 /base5
 /wandb
 __pycache__
+/cache
 /1.py
 /2.py
 /3.py
+*.npy
+/1.txt

@@ -1,14 +1,20 @@
 import jax
+from jax import Array
+import jax.numpy as jnp
 import jax.random as rand
 import jax_smi
 import optax
+import time
 from transformers import FlaxT5ForConditionalGeneration, T5Config, T5Tokenizer
-from typing import Any, Callable
+from typing import Any, Callable, Optional
 import wandb
 
-from lib.proc_init_utils import initialise_tpu;  
-from lib.seeding import BEST_INTEGER
+from lib.param_utils import save_params
+from lib.proc_init_utils import initialise_tpu
 from lib_new import MyDataLoader, TrainData, cross_entropy_loss, load_data
+
+forward: Optional[Callable] = None
+optimize: Optional[Callable] = None
 
 def load_model() -> tuple[Callable, dict]:
     config = T5Config.from_pretrained('base5', tie_word_embeddings=False)
@@ -17,7 +23,6 @@ def load_model() -> tuple[Callable, dict]:
     params = model.params
     return forward, params
 
-@jax.jit
 @jax.value_and_grad
 def train_forward(params: dict, data_batch: TrainData, *, key: rand.KeyArray):
     src, dst, mask_enc, mask_dec, labels = data_batch
@@ -28,56 +33,55 @@ def train_forward(params: dict, data_batch: TrainData, *, key: rand.KeyArray):
         decoder_attention_mask=mask_dec,
         params=params,
         dropout_rng=key,
-    )
+    )  # type: ignore
     loss = cross_entropy_loss(outputs.logits, labels, mask=mask_dec)
     return loss
 
-def train_step(params: dict, opt_state: Any, data_batch: TrainData, *, key: rand.KeyArray):
-    loss, grads = train_forward(params, data_batch, key=key)
-    updates, opt_state = optimize(grads, opt_state, params)
+@jax.jit
+def train_step(params: dict, opt_state: Any, total_loss: Array, data_batch: TrainData, key: rand.KeyArray) -> tuple[dict, Any, Array, Array, rand.KeyArray]:
+    key, subkey = rand.split(key)
+    loss, grads = train_forward(params, data_batch, key=subkey)
+    total_loss += loss
+    updates, opt_state = optimize(grads, opt_state, params)  # type: ignore
     params = optax.apply_updates(params, updates)
-    return params, opt_state, loss
+    return params, opt_state, total_loss, loss, key
 
 def main() -> None:
     global forward, optimize
 
-    batch_size = 36
-    max_len = 128
-    n_epochs = 10
-
-    rank = 1
+    lr = 0.0023
+    batch_size = 56
+    max_len_enc = 512
+    max_len_dec = 64
+    n_epochs = 8
+    rank = 2
+    seed = 3407
 
     initialise_tpu('v4-16', n_devices=1, rank=rank)
-    print('Running on:', jax.numpy.zeros(()).device())
     wandb.init(project='t5-finetuning-qa')
-    if rank == 0:
-        jax_smi.initialise_tracking()
+    print(wandb.run.name)  # type: ignore
+    jax_smi.initialise_tracking(rank=rank)
+    key = rand.PRNGKey(seed)
 
     tokenizer = T5Tokenizer.from_pretrained('base5')
     forward, params = load_model()
 
     data = load_data()
-    dataloader = MyDataLoader(data, tokenizer, batch_size, max_len)
+    dataloader = MyDataLoader(data, tokenizer, batch_size, max_len_enc, max_len_dec)  # TODO: prng
 
-    optimizer = optax.chain(
-        optax.adaptive_grad_clip(0.1, eps=0.001),
-        optax.sgd(learning_rate=0.03),
-    )
+    optimizer = optax.adafactor(learning_rate=lr)
     optimize = optimizer.update
     opt_state = optimizer.init(params)
 
-    key = rand.PRNGKey(BEST_INTEGER)
-
-    default_device = jax.devices()[0]
-
     for epoch in range(n_epochs):
-        print(f'Epoch {epoch}')
-        for data_batch in dataloader:
-            print(f'Step')
-            key, subkey = rand.split(key)
-            params, opt_state, loss = train_step(params, opt_state, data_batch, key=subkey)
-            wandb.log({'train loss': loss}, commit=False)
-        wandb.log({}, commit=True)
+        total_loss = jnp.zeros(())
+        for step, data_batch in enumerate(dataloader):
+            start_time = time.time()
+            params, opt_state, total_loss, loss, key = train_step(params, opt_state, total_loss, data_batch, key)
+            jax.debug.callback(lambda loss: wandb.log({'train loss': loss.item(), 'time': time.time() - start_time}), loss)
+        wandb.log({'epoch loss': total_loss.item() / (step + 1)})
+
+    save_params(params, f'{wandb.run.name}.npy')  # type: ignore
 
 if __name__ == '__main__':
     main()
