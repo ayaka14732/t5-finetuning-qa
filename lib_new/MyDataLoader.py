@@ -39,9 +39,10 @@ def worker_init_fn(worker_id: int) -> None:
     random.seed(worker_seed)
 
 class MyDataLoader(DataLoader):
-    def __init__(self, data: list[tuple[str, str]], tokenizer: T5Tokenizer, batch_size: int, max_len_enc: int, max_len_dec: int) -> None:
+    def __init__(self, data: list[tuple[str, str]], tokenizer: T5Tokenizer, batch_size: int, max_len_enc: int, max_len_dec: int, drop_last: bool=True, collate_fn=None) -> None:
         dataset = MyDataset(data)
-        collate_fn = partial(transform, tokenizer, max_len_enc, max_len_dec)
+        if collate_fn is None:
+            collate_fn = partial(transform, tokenizer, max_len_enc, max_len_dec)
         g = torch.Generator()
         g.manual_seed(0)
         super().__init__(
@@ -50,7 +51,7 @@ class MyDataLoader(DataLoader):
             shuffle=True,
             num_workers=4,
             collate_fn=collate_fn,
-            drop_last=True,
+            drop_last=drop_last,
             worker_init_fn=worker_init_fn,
             prefetch_factor=1,
             multiprocessing_context=multiprocessing.get_context('spawn'),

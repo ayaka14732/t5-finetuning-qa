@@ -48,7 +48,7 @@ while True:
         break
 
     prompt = make_prompt(history, sentence)
-    print('Using prompt:', prompt)
+    # print('Using prompt:', prompt)
 
     key, subkey = rand.split(key)
     inputs = tokenizer([prompt], padding='max_length', max_length=512, return_tensors='jax')

@@ -35,8 +35,8 @@ Response:
 There is an Afrian place named Bedouin in the centre. How does that sound?
 '''
 
-def load_data() -> list[tuple[str, str]]:
-    dataset = load_dataset('multi_woz_v22', split='train')
+def load_data(split='train') -> list[tuple[str, str]]:
+    dataset = load_dataset('multi_woz_v22', split=split)
     def preprocess(example):
         example['utterances'] = example['turns']['utterance']
         return example
