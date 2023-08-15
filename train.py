@@ -59,7 +59,6 @@ def main() -> None:
     max_len_enc = 512
     max_len_dec = 64
     n_epochs = 8
-    rank = 2
     seed = 3407
 
     initialise_tpu('v3-256', n_devices=8)

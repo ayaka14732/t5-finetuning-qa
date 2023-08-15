@@ -27,3 +27,10 @@ Train:
 export HF_HOME=/dev/shm/huggingface
 python train.py
 ```
+
+Inference:
+
+```sh
+gdown 1QIaajNStZEejqhx7M30p9MOp8qRYtSK4  # worldly-lion-48.npy
+python inference.py
+```

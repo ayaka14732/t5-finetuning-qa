@@ -4,7 +4,7 @@ from itertools import chain
 from transformers import FlaxT5ForConditionalGeneration, T5Config, T5Tokenizer
 
 from lib.param_utils import load_params
-from lib.proc_init_utils import initialise_tpu
+from lib.proc_init_utils import initialise_gpu
 
 def make_prompt(history: list[str], sentence: str) -> str:
     return '\n'.join((
@@ -19,13 +19,13 @@ def make_prompt(history: list[str], sentence: str) -> str:
     ))
 
 rank = 3
-initialise_tpu('v4-16', n_devices=1, rank=rank)
+initialise_gpu(cuda_visible_devices='0')
 jax.experimental.compilation_cache.compilation_cache.initialize_cache('cache')
 
 tokenizer = T5Tokenizer.from_pretrained('base5')
 config = T5Config.from_pretrained('base5', tie_word_embeddings=False)
 model = FlaxT5ForConditionalGeneration.from_pretrained('base5', config=config, from_pt=True)
-model.params = load_params('fallen-thunder-44.npy')
+model.params = load_params('worldly-lion-48.npy')
 
 @jax.jit
 def inference(input_ids, attention_mask, key):
