@@ -1,4 +1,5 @@
 from functools import partial
+import jax
 import jax.numpy as jnp
 import multiprocessing
 import random
@@ -21,17 +22,18 @@ class MyDataset(Dataset):
         return len(self.data)
 
 def transform(tokenizer: T5Tokenizer, max_len_enc: int, max_len_dec: int, data_batch: list[tuple[str, str]]) -> TrainData:
-    seq_src, seq_dst = zip(*data_batch)
-    inputs_src = tokenizer(seq_src, padding='max_length', max_length=max_len_enc, truncation=True, return_tensors='jax')
-    inputs_dst = tokenizer(seq_dst, padding='max_length', max_length=max_len_dec, truncation=True, return_tensors='jax')
+    with jax.default_device(jax.devices('cpu')[0]):
+        seq_src, seq_dst = zip(*data_batch)
+        inputs_src = tokenizer(seq_src, padding='max_length', max_length=max_len_enc, truncation=True, return_tensors='jax')
+        inputs_dst = tokenizer(seq_dst, padding='max_length', max_length=max_len_dec, truncation=True, return_tensors='jax')
 
-    src = inputs_src.input_ids.astype(jnp.uint16)
-    labels = inputs_dst.input_ids.astype(jnp.uint16)
-    src_mask = inputs_src.attention_mask.astype(jnp.bool_)
-    dst_mask = inputs_dst.attention_mask.astype(jnp.bool_)
-    dst = jnp.roll(labels, 1, axis=-1).at[:, 0].set(0)
+        src = inputs_src.input_ids.astype(jnp.uint16)
+        labels = inputs_dst.input_ids.astype(jnp.uint16)
+        src_mask = inputs_src.attention_mask.astype(jnp.bool_)
+        dst_mask = inputs_dst.attention_mask.astype(jnp.bool_)
+        dst = jnp.roll(labels, 1, axis=-1).at[:, 0].set(0)
 
-    return TrainData(src, dst, src_mask, dst_mask, labels)
+        return TrainData(src, dst, src_mask, dst_mask, labels)
 
 def worker_init_fn(worker_id: int) -> None:
     initialise_cpu()

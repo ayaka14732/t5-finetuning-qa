@@ -2,6 +2,7 @@ import jax
 from jax import Array
 import jax.numpy as jnp
 import jax.random as rand
+from jax.sharding import PartitionSpec as P
 import jax_smi
 import optax
 import time
@@ -9,18 +10,22 @@ from transformers import FlaxT5ForConditionalGeneration, T5Config, T5Tokenizer
 from typing import Any, Callable, Optional
 import wandb
 
+from lib.multihost_utils import shard_array_from_sharding_scheme
 from lib.param_utils import save_params
 from lib.proc_init_utils import initialise_tpu
 from lib_new import MyDataLoader, TrainData, cross_entropy_loss, load_data
 
 forward: Optional[Callable] = None
 optimize: Optional[Callable] = None
+S: Optional[Callable] = None
 
 def load_model() -> tuple[Callable, dict]:
-    config = T5Config.from_pretrained('base5', tie_word_embeddings=False)
-    model = FlaxT5ForConditionalGeneration.from_pretrained('base5', config=config, from_pt=True)
-    forward = model.__call__
-    params = model.params
+    with jax.default_device(jax.devices('cpu')[0]):
+        config = T5Config.from_pretrained('base5', tie_word_embeddings=False)
+        model = FlaxT5ForConditionalGeneration.from_pretrained('base5', config=config, from_pt=True)
+        forward = model.__call__
+        params = model.params
+    params = jax.tree_map(lambda x: S(x, P(None,)), params)  # type: ignore
     return forward, params
 
 @jax.value_and_grad
@@ -47,7 +52,7 @@ def train_step(params: dict, opt_state: Any, total_loss: Array, data_batch: Trai
     return params, opt_state, total_loss, loss, key
 
 def main() -> None:
-    global forward, optimize
+    global forward, optimize, S
 
     lr = 0.0023
     batch_size = 56
@@ -57,11 +62,13 @@ def main() -> None:
     rank = 2
     seed = 3407
 
-    initialise_tpu('v4-16', n_devices=1, rank=rank)
+    initialise_tpu('v3-256', n_devices=8)
     wandb.init(project='t5-finetuning-qa')
     print(wandb.run.name)  # type: ignore
-    jax_smi.initialise_tracking(rank=rank)
+    jax_smi.initialise_tracking()
     key = rand.PRNGKey(seed)
+
+    S = shard_array_from_sharding_scheme((8,), ('B',))
 
     tokenizer = T5Tokenizer.from_pretrained('base5')
     forward, params = load_model()
@@ -77,6 +84,7 @@ def main() -> None:
         total_loss = jnp.zeros(())
         for step, data_batch in enumerate(dataloader):
             start_time = time.time()
+            data_batch = jax.tree_map(lambda x: S(x, P('B',)), data_batch)  # type: ignore
             params, opt_state, total_loss, loss, key = train_step(params, opt_state, total_loss, data_batch, key)
             jax.debug.callback(lambda loss: wandb.log({'train loss': loss.item(), 'time': time.time() - start_time}), loss)
         wandb.log({'epoch loss': total_loss.item() / (step + 1)})

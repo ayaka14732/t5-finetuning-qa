@@ -20,3 +20,10 @@ gdown 1f2sXC9wtpGm6vzIC0STDxWX8D7J1OTcM  # OmniDialog_T5basePreTrainingModel.tar
 tar -zxf OmniDialog_T5basePreTrainingModel.tar.gz  # base5/
 rm -rf OmniDialog_T5basePreTrainingModel.tar.gz
 ```
+
+Train:
+
+```sh
+export HF_HOME=/dev/shm/huggingface
+python train.py
+```
