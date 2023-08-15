@@ -18,7 +18,6 @@ def make_prompt(history: list[str], sentence: str) -> str:
         'Response:',
     ))
 
-rank = 3
 initialise_gpu(cuda_visible_devices='0')
 jax.experimental.compilation_cache.compilation_cache.initialize_cache('cache')
 

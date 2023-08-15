@@ -9,7 +9,7 @@ pip install -U pip
 pip install -U wheel
 pip install "jax[tpu]" -f https://storage.googleapis.com/jax-releases/libtpu_releases.html
 pip install --pre torch --index-url https://download.pytorch.org/whl/nightly/cpu
-pip install git+https://github.com/huggingface/transformers.git
+pip install git+https://github.com/huggingface/transformers.git#f11518a542ca2c8d276f323ef6563afa3f1b03a7
 pip install -r requirements.txt
 ```
 
