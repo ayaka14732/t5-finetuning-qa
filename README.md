@@ -42,5 +42,5 @@ Serve in production:
 Copy `env.json.example` to `env.json` and fill in your `deepl_apikey` and `openai_apikey`. Then run:
 
 ```sh
-uvicorn --port 9050 serve:app
+uvicorn --port 19230 serve:app
 ```

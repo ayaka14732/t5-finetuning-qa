@@ -68,7 +68,3 @@ with open('env.json', encoding='utf-8') as f:
 deepl_apikey = o['deepl_apikey']
 openai_apikey = o['openai_apikey']
 app.post('/translate/')(initialise_translator(deepl_apikey, openai_apikey))
-
-if __name__ == '__main__':
-    import uvicorn
-    uvicorn.run(app, host='0.0.0.0', port=9050)
