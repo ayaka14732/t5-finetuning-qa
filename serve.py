@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from itertools import chain
 import jax
 from jax import Array
@@ -6,6 +7,7 @@ import jax.random as rand
 import json
 from pydantic import BaseModel
 from transformers import FlaxT5ForConditionalGeneration, T5Config, T5Tokenizer
+from typing import Callable
 
 from lib.param_utils import load_params
 from lib.proc_init_utils import initialise_gpu
@@ -13,11 +15,20 @@ from lib_translate import initialise_translator
 
 app = FastAPI()
 
+origins = ["*"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 @app.get('/')
 def read_root():
     return {'Hello': 'World'}
 
-def load_chat_model():
+def load_chat_model() -> Callable:
     class InputData(BaseModel):
         history: list[str]
         sentence: str
@@ -63,8 +74,25 @@ def load_chat_model():
 
 app.post('/chat/')(load_chat_model())
 
-with open('env.json', encoding='utf-8') as f:
-    o = json.load(f)
-deepl_apikey = o['deepl_apikey']
-openai_apikey = o['openai_apikey']
-app.post('/translate/')(initialise_translator(deepl_apikey, openai_apikey))
+def load_translate_model() -> Callable:
+    with open('env.json', encoding='utf-8') as f:
+        o = json.load(f)
+    deepl_apikey = o['deepl_apikey']
+    openai_apikey = o['openai_apikey']
+
+    translate_text = initialise_translator(deepl_apikey, openai_apikey)
+
+    class InputData(BaseModel):
+        sentence: str
+        src_lang: str
+        dst_lang: str
+
+    def translate(data: InputData) -> str:
+        sentence = data.sentence
+        src_lang = data.src_lang
+        dst_lang = data.dst_lang
+        return translate_text(sentence, src_lang, dst_lang)
+    
+    return translate
+
+app.post('/translate/')(load_translate_model())
