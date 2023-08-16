@@ -8,3 +8,4 @@ __pycache__
 /3.py
 *.npy
 /1.txt
+/env.json

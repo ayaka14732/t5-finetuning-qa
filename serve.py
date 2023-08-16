@@ -3,11 +3,13 @@ from itertools import chain
 import jax
 from jax import Array
 import jax.random as rand
+import json
 from pydantic import BaseModel
 from transformers import FlaxT5ForConditionalGeneration, T5Config, T5Tokenizer
 
 from lib.param_utils import load_params
 from lib.proc_init_utils import initialise_gpu
+from lib_translate import initialise_translator
 
 app = FastAPI()
 
@@ -61,8 +63,11 @@ def load_model():
 
 app.post('/process/')(load_model())
 
-# How can I go from Tur Abdin to Stockholm?
-# I want to book a train. List all Tuesday departures to Cambridge.
+with open('env.json', encoding='utf-8') as f:
+    o = json.load(f)
+deepl_apikey = o['deepl_apikey']
+openai_apikey = o['openai_apikey']
+app.post('/translate/')(initialise_translator(deepl_apikey, openai_apikey))
 
 if __name__ == '__main__':
     import uvicorn

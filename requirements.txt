@@ -18,3 +18,5 @@ types-tqdm
 
 fastapi
 uvicorn[standard]
+openai
+deepl

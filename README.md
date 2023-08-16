@@ -13,6 +13,8 @@ pip install git+https://github.com/huggingface/transformers.git#f11518a542ca2c8d
 pip install -r requirements.txt
 ```
 
+Please note that the command above for installing JAX is for the TPU platform. If you want to install it for GPU, you should follow the [official guide](https://github.com/google/jax#installation).
+
 Model weights:
 
 ```sh
@@ -36,6 +38,8 @@ python inference.py
 ```
 
 Serve in production:
+
+Copy `env.json.example` to `env.json` and fill in your `deepl_apikey` and `openai_apikey`. Then run:
 
 ```sh
 uvicorn --port 9050 serve:app
