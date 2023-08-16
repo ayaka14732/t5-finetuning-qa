@@ -50,6 +50,6 @@ def initialise_translator(deepl_apikey: str, openai_apikey: str) -> Callable:
         if dst_lang == 'EN':
             dst_lang = 'EN-GB'
 
-        return deepl_translator.translate_text(sentence, source_lang=src_lang, target_lang=dst_lang)
+        return deepl_translator.translate_text(sentence, source_lang=src_lang, target_lang=dst_lang).text
 
     return translate_text
