@@ -1,43 +1,43 @@
+import json
 from typing import Callable
+
+def must_return_a_string(response: str) -> str:
+    assert isinstance(response, str)
+    return json.dumps({
+        'response': response,
+    })
+
+INITIAL_PROMPT = '''You are ChatGPT, a large language model trained by OpenAI, based on the GPT-4 architecture.
+Knowledge cutoff: 2021-09
+Current date: 2023-08-16'''
+
+DOCSTRING = """
+Serializes the given `response` string to a JSON format.
+
+Parameters:
+- response (str): The response string to be serialized.
+
+Returns:
+- str: A JSON string containing the provided response.
+
+Raises:
+- AssertionError: If the provided `response` is not a string.
+
+Examples:
+>>> must_return_a_string("hello")
+'{"response": "hello"}'
+
+Note:
+This function makes use of assertions to ensure data consistency. It's essential to provide the 
+required response as a string before calling this function.
+"""
+
+must_return_a_string.__doc__ = DOCSTRING
 
 def initialise_gpt4_translator(openai_apikey: str) -> tuple[Callable, Callable]:
     import openai
-    import json
 
     openai.api_key = openai_apikey
-
-    def must_return_a_string(response: str) -> str:
-        assert isinstance(response, str)
-        return json.dumps({
-            'response': response,
-        })
-
-    INITIAL_PROMPT = '''You are ChatGPT, a large language model trained by OpenAI, based on the GPT-4 architecture.
-    Knowledge cutoff: 2021-09
-    Current date: 2023-08-16'''
-
-    DOCSTRING = """
-    Serializes the given `response` string to a JSON format.
-
-    Parameters:
-    - response (str): The response string to be serialized.
-
-    Returns:
-    - str: A JSON string containing the provided response.
-
-    Raises:
-    - AssertionError: If the provided `response` is not a string.
-
-    Examples:
-    >>> must_return_a_string("hello")
-    '{"response": "hello"}'
-
-    Note:
-    This function makes use of assertions to ensure data consistency. It's essential to provide the 
-    required response as a string before calling this function.
-    """
-
-    must_return_a_string.__doc__ = DOCSTRING
 
     def yue2en(input_string: str) -> str:
         messages = [
