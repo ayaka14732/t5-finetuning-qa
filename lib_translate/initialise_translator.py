@@ -9,8 +9,31 @@ def initialise_translator(deepl_apikey: str, openai_apikey: str) -> Callable:
     yue2en, en2yue = initialise_gpt4_translator(openai_apikey=openai_apikey)
 
     lang_code2deepl_lang = {
-        'en': 'EN-GB',
+        'bg': 'BG',
+        'cs': 'CS',
         'da': 'DA',
+        'de': 'DE',
+        'el': 'EL',
+        'en': 'EN',
+        'es': 'ES',
+        'fi': 'FI',
+        'fr': 'FR',
+        'hu': 'HU',
+        'id': 'ID',
+        'it': 'IT',
+        'ja': 'JA',
+        'ko': 'KO',
+        'nb': 'NB',
+        'nl': 'NL',
+        'pl': 'PL',
+        'pt': 'PT',
+        'ro': 'RO',
+        'ru': 'RU',
+        'sk': 'SK',
+        'sv': 'SV',
+        'tr': 'TR',
+        'uk': 'UK',
+        'zh': 'ZH',
     }
 
     def translate_text(sentence: str, src_lang: str, dst_lang: str) -> str:
