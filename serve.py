@@ -17,7 +17,7 @@ app = FastAPI()
 def read_root():
     return {'Hello': 'World'}
 
-def load_model():
+def load_chat_model():
     class InputData(BaseModel):
         history: list[str]
         sentence: str
@@ -48,7 +48,7 @@ def load_model():
         output = model.generate(input_ids=input_ids, attention_mask=attention_mask, do_sample=True, max_length=64, prng_key=key)
         return output.sequences
 
-    def process(data: InputData) -> str:
+    def chat(data: InputData) -> str:
         history = data.history
         sentence = data.sentence
         nonlocal key
@@ -59,9 +59,9 @@ def load_model():
         generated_text = tokenizer.batch_decode(outputs, skip_special_tokens=True)[0]
         return generated_text
     
-    return process
+    return chat
 
-app.post('/process/')(load_model())
+app.post('/chat/')(load_chat_model())
 
 with open('env.json', encoding='utf-8') as f:
     o = json.load(f)
