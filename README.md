@@ -34,3 +34,9 @@ Inference:
 gdown 1QIaajNStZEejqhx7M30p9MOp8qRYtSK4  # worldly-lion-48.npy
 python inference.py
 ```
+
+Serve in production:
+
+```sh
+uvicorn --port 9050 serve:app
+```

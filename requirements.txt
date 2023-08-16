@@ -15,3 +15,6 @@ einops
 evaluate
 tqdm
 types-tqdm
+
+fastapi
+uvicorn[standard]
