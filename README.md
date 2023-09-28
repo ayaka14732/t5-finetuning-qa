@@ -7,13 +7,10 @@ python3.11 -m venv venv
 . venv/bin/activate
 pip install -U pip
 pip install -U wheel
-pip install "jax[tpu]" -f https://storage.googleapis.com/jax-releases/libtpu_releases.html
-pip install --pre torch --index-url https://download.pytorch.org/whl/nightly/cpu
-pip install git+https://github.com/huggingface/transformers.git#f11518a542ca2c8d276f323ef6563afa3f1b03a7
+pip install --pre torch --index-url https://download.pytorch.org/whl/nightly/cu121
+pip install git+https://github.com/huggingface/transformers.git
 pip install -r requirements.txt
 ```
-
-Please note that the command above for installing JAX is for the TPU platform. If you want to install it for GPU, you should follow the [official guide](https://github.com/google/jax#installation).
 
 Model weights:
 
